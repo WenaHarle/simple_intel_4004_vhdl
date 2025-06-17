@@ -2,98 +2,56 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
+-- Entitas utama CPU dengan port I/O sederhana
 entity cpu is
     Port (
-        clk  : in  STD_LOGIC;
-        rst  : in  STD_LOGIC;
-        acc  : out STD_LOGIC_VECTOR(3 downto 0)  -- Untuk observasi
+        clk  : in  STD_LOGIC;                     -- Sinyal clock
+        rst  : in  STD_LOGIC;                     -- Sinyal reset
+        acc  : out STD_LOGIC_VECTOR(3 downto 0)   -- Output accumulator untuk observasi
     );
 end cpu;
 
 architecture Structural of cpu is
-    -- Deklarasi Komponen
-    component alu is
-        Port ( a, b : in  STD_LOGIC_VECTOR(3 downto 0);
-               op : in  STD_LOGIC_VECTOR(1 downto 0);
-               result : out STD_LOGIC_VECTOR(3 downto 0);
-               carry : out STD_LOGIC);
-    end component;
+    -- Deklarasi komponen-komponen CPU
+    component alu is ... end component;
+    component reg_file is ... end component;
+    component program_counter is ... end component;
+    component rom is ... end component;
+    component control_unit is ... end component;
     
-    component reg_file is
-        Port ( clk, rst, wr_en : in  STD_LOGIC;
-               addr : in  STD_LOGIC_VECTOR(3 downto 0);
-               data_in : in  STD_LOGIC_VECTOR(3 downto 0);
-               data_out : out STD_LOGIC_VECTOR(3 downto 0));
-    end component;
-    
-    component program_counter is
-        Port ( clk, rst, load : in  STD_LOGIC;
-               pc_in : in  STD_LOGIC_VECTOR(11 downto 0);
-               pc_out : out STD_LOGIC_VECTOR(11 downto 0));
-    end component;
-    
-    component rom is
-        Port ( addr : in  STD_LOGIC_VECTOR(11 downto 0);
-               data : out STD_LOGIC_VECTOR(7 downto 0));
-    end component;
-    
-    component control_unit is
-        Port ( opcode : in  STD_LOGIC_VECTOR(7 downto 0);
-               alu_op : out STD_LOGIC_VECTOR(1 downto 0);
-               reg_wr : out STD_LOGIC;
-               pc_load : out STD_LOGIC;
-               imm_data : out STD_LOGIC_VECTOR(3 downto 0));
-    end component;
-    
-    -- Sinyal Internal
-    signal pc_out, jump_addr : STD_LOGIC_VECTOR(11 downto 0);
-    signal rom_data : STD_LOGIC_VECTOR(7 downto 0);
-    signal alu_result, reg_data, imm_val : STD_LOGIC_VECTOR(3 downto 0);
-    signal alu_carry, reg_wr_en, pc_load : STD_LOGIC;
-    signal alu_operation : STD_LOGIC_VECTOR(1 downto 0);
-    signal acc_reg : STD_LOGIC_VECTOR(3 downto 0) := "0000";
+    -- Sinyal internal CPU
+    signal pc_out, jump_addr : STD_LOGIC_VECTOR(11 downto 0);  -- Sinyal PC
+    signal rom_data : STD_LOGIC_VECTOR(7 downto 0);            -- Data dari ROM
+    signal alu_result, reg_data, imm_val : STD_LOGIC_VECTOR(3 downto 0);  -- Data path
+    signal alu_carry, reg_wr_en, pc_load : STD_LOGIC;          -- Sinyal kontrol
+    signal alu_operation : STD_LOGIC_VECTOR(1 downto 0);       -- Operasi ALU
+    signal acc_reg : STD_LOGIC_VECTOR(3 downto 0) := "0000";   -- Register accumulator
 begin
     acc <= acc_reg;  -- Output accumulator
     
-    -- Instansiasi Komponen
-    PC: program_counter port map(
-        clk => clk, rst => rst, load => pc_load,
-        pc_in => jump_addr, pc_out => pc_out
-    );
+    -- Instansiasi komponen Program Counter
+    PC: program_counter port map(...);
     
-    ROM_Inst: rom port map(addr => pc_out, data => rom_data);
+    -- Instansiasi ROM
+    ROM_Inst: rom port map(...);
     
-    Ctrl: control_unit port map(
-        opcode => rom_data,
-        alu_op => alu_operation,
-        reg_wr => reg_wr_en,
-        pc_load => pc_load,
-        imm_data => imm_val
-    );
+    -- Instansiasi Unit Kendali
+    Ctrl: control_unit port map(...);
     
-    RegFile: reg_file port map(
-        clk => clk, rst => rst, wr_en => reg_wr_en,
-        addr => rom_data(3 downto 0),  -- Gunakan 4 bit rendah sebagai alamat register
-        data_in => alu_result,
-        data_out => reg_data
-    );
+    -- Instansiasi Register File
+    RegFile: reg_file port map(...);
     
-    ALU_Inst: alu port map(
-        a => acc_reg,
-        b => reg_data,
-        op => alu_operation,
-        result => alu_result,
-        carry => alu_carry
-    );
+    -- Instansiasi ALU
+    ALU_Inst: alu port map(...);
     
-    -- Proses Eksekusi
+    -- Proses eksekusi utama CPU
     process(clk)
     begin
         if rising_edge(clk) then
-            if rst = '1' then
+            if rst = '1' then           -- Reset accumulator
                 acc_reg <= "0000";
-            elsif reg_wr_en = '1' then
-                acc_reg <= alu_result;  -- Update accumulator
+            elsif reg_wr_en = '1' then   -- Update accumulator jika ada penulisan
+                acc_reg <= alu_result;
             end if;
             
             -- Handle jump address
